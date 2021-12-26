@@ -118,17 +118,6 @@ public class PlayerData {
         }
     }
 
-    public void setSolveData(int TotalFails, long SolvedTime, boolean isPassed) {
-        if (plugin.getStatusRecord().getUseSQL()) {
-            plugin.getStatusRecord().setToSQL(player, SolvedTime, TotalFails, isPassed);
-        } else {
-            fileConfiguration.set("last-pass", SolvedTime);
-            fileConfiguration.set("total-fails", TotalFails);
-            fileConfiguration.set("passed", isPassed);
-            saveData();
-        }
-    }
-
     public long getLastPass() {
         if (plugin.getStatusRecord().getUseSQL()) {
             return plugin.getStatusRecord().getLastPass(player);

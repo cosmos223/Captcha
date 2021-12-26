@@ -84,16 +84,12 @@ public class StatusRecord {
                 openConnection();
                 UUID uuid = player.getUniqueId();
 
-                String sql = "INSERT INTO players (uuid, last_pass, total_fails, passed) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE last_pass = ? , total_fails = ? , passed = ?;";
+                String sql = "INSERT INTO players (uuid, last_pass, total_fails, passed) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE last_pass = last_pass , total_fails = total_fails , passed = passed;";
                 PreparedStatement preparedStatement = connection.prepareStatement(sql);
                 preparedStatement.setString(1, uuid.toString());
                 preparedStatement.setLong(2, SolvedTime);
                 preparedStatement.setInt(3, TotalFails);
                 preparedStatement.setBoolean(4, isPassed);
-
-                preparedStatement.setLong(5, SolvedTime);
-                preparedStatement.setInt(6, TotalFails);
-                preparedStatement.setBoolean(7, isPassed);
 
                 preparedStatement.executeUpdate();
             } catch (ClassNotFoundException e) {
