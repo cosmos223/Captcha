@@ -62,7 +62,7 @@ public class StatusRecord {
             try {
                 openConnection();
 
-                String sql = "CREATE TABLE IF NOT EXISTS players (uuid varchar(36), last_pass long, total_fails int, passed BIT);";
+                String sql = "CREATE TABLE IF NOT EXISTS players (uuid varchar(36) PRIMARY KEY, last_pass long, total_fails int, passed BIT);";
                 PreparedStatement preparedStatement = connection.prepareStatement(sql);
 
                 preparedStatement.executeUpdate();
