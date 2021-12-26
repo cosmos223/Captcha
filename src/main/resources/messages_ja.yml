@@ -1,0 +1,28 @@
+already-in-captcha: '&7このプレイヤーはすでに認証を行っています'
+fail: '&7認証に失敗しました'
+help:
+  - '&7/captcha reload'
+  - '&7/captcha (player)'
+join: '&7あなたがBOTでないことを確認するために、地図に表示されている文字を入力してください'
+kick:
+  - '&7あなたはキックされました。'
+  - ''
+  - '&7やり直してください'
+  - 'by Captcha'
+move: '&7チャットを使用するには、移動する必要があります。'
+no-maps:
+  - '&7あなたはキックされました'
+  - ''
+  - '&7すべての認証リソースが使用されています...'
+  - 'これが表示された場合は Discord (https://discord.gg/YOURDISCORDLINK) にてお知らせください'
+no-permission: '&権限がありません'
+not-online: '&7そのプレイヤーはオフラインです'
+player-only: '&7このコマンドはプレイヤー専用です'
+reload: '&7Captchaを再読み込みしました'
+reload-kick: '&6サーバーへの接続が切断されました, by Captcha'
+safe-area-set: '&7新たなセーフエリアが設定されました'
+success: '&7認証に成功しました'
+update:
+  - '&7アップデートが見つかりました。'
+  - ''
+  - '&7Get it at: https://www.spigotmc.org/resources/captcha.96373/'
