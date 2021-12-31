@@ -60,7 +60,9 @@ public class PlayerData {
     }
 
     public void reloadData() {
-        fileConfiguration = YamlConfiguration.loadConfiguration(file);
+        if (!plugin.getStatusRecord().getUseSQL()) {
+            fileConfiguration = YamlConfiguration.loadConfiguration(file);
+        }
     }
 
     public void saveData() {

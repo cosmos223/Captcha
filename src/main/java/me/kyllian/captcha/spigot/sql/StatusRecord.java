@@ -1,6 +1,9 @@
 package me.kyllian.captcha.spigot.sql;
 
+import com.zaxxer.hikari.HikariDataSource;
 import me.kyllian.captcha.spigot.CaptchaPlugin;
+import me.kyllian.captcha.spigot.map.MapHandlerNew;
+import me.kyllian.captcha.spigot.map.MapHandlerOld;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -12,9 +15,8 @@ import java.sql.*;
 import java.util.UUID;
 
 public class StatusRecord {
-    private CaptchaPlugin plugin;
 
-    private Connection connection;
+    private CaptchaPlugin plugin;
     private String host, database, username, password;
     private int port;
     private Boolean isUseSQL = false;
@@ -22,10 +24,19 @@ public class StatusRecord {
     private File file;
     private FileConfiguration fileConfiguration;
 
+    private HikariDataSource hikari;
+
+    private String hikariDataSourceClassName = "com.mysql.jdbc.Driver";
+
     public StatusRecord(CaptchaPlugin plugin) {
+
         this.plugin = plugin;
         file = new File(
                 plugin.getDataFolder(), "config_db.yml");
+
+        String version = Bukkit.getVersion();
+        if (version.contains("1.17") || version.contains("1.16")) hikariDataSourceClassName = "com.mysql.cj.jdbc.Driver";
+        else hikariDataSourceClassName = "com.mysql.jdbc.Driver";
 
         try {
             if (!file.exists()) {
@@ -59,15 +70,15 @@ public class StatusRecord {
         password = fileConfiguration.getString("password");
 
         if (isUseSQL) {
-            try {
-                openConnection();
+            hikari = new HikariDataSource();
+            hikari.setDriverClassName(hikariDataSourceClassName);
+            hikari.setJdbcUrl("jdbc:mysql://" + this.host + ":" + this.port + "/" + this.database);
+            hikari.addDataSourceProperty("user", username);
+            hikari.addDataSourceProperty("password", password);
 
-                String sql = "CREATE TABLE IF NOT EXISTS players (uuid varchar(36) PRIMARY KEY, last_pass long, total_fails int, passed BIT);";
-                PreparedStatement preparedStatement = connection.prepareStatement(sql);
-
-                preparedStatement.executeUpdate();
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
+            try(Connection connection = hikari.getConnection();
+                Statement statement = connection.createStatement();){
+                statement.executeUpdate("CREATE TABLE IF NOT EXISTS players (uuid varchar(36) PRIMARY KEY, last_pass long, total_fails int, passed BIT);");
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -76,24 +87,35 @@ public class StatusRecord {
 
     public void reloadData() {
         fileConfiguration = YamlConfiguration.loadConfiguration(file);
+
+        isUseSQL = fileConfiguration.getBoolean("use-mysql");
+        host = fileConfiguration.getString("host");
+        port = fileConfiguration.getInt("port");
+        database = fileConfiguration.getString("database");
+        username = fileConfiguration.getString("username");
+        password = fileConfiguration.getString("password");
+
+        closeConnection();
+
+        if (isUseSQL) {
+            hikari = new HikariDataSource();
+            hikari.setDriverClassName(hikariDataSourceClassName);
+            hikari.setJdbcUrl("jdbc:mysql://" + this.host + ":" + this.port + "/" + this.database);
+            hikari.addDataSourceProperty("user", username);
+            hikari.addDataSourceProperty("password", password);
+        }
     }
 
     public void setToSQL(Player player, long SolvedTime, int TotalFails, boolean isPassed) {
+        UUID uuid = player.getUniqueId();
         if (isUseSQL) {
-            try {
-                openConnection();
-                UUID uuid = player.getUniqueId();
-
-                String sql = "INSERT INTO players (uuid, last_pass, total_fails, passed) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE last_pass = last_pass , total_fails = total_fails , passed = passed;";
-                PreparedStatement preparedStatement = connection.prepareStatement(sql);
-                preparedStatement.setString(1, uuid.toString());
-                preparedStatement.setLong(2, SolvedTime);
-                preparedStatement.setInt(3, TotalFails);
-                preparedStatement.setBoolean(4, isPassed);
-
-                preparedStatement.executeUpdate();
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
+            try (Connection connection = hikari.getConnection();
+                 PreparedStatement statement = connection.prepareStatement("INSERT INTO players (uuid, last_pass, total_fails, passed) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE last_pass = last_pass , total_fails = total_fails , passed = passed;")){
+                statement.setString(1, uuid.toString());
+                statement.setLong(2, SolvedTime);
+                statement.setInt(3, TotalFails);
+                statement.setBoolean(4, isPassed);
+                statement.execute();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -102,17 +124,10 @@ public class StatusRecord {
 
     public void updateTotalFails(Player player) {
         if (isUseSQL) {
-            try {
-                openConnection();
-                UUID uuid = player.getUniqueId();
-
-                String sql = "UPDATE players SET total_fails = total_fails + 1 , passed = false WHERE uuid = ?;";
-                PreparedStatement preparedStatement = connection.prepareStatement(sql);
-                preparedStatement.setString(1, uuid.toString());
-
-                preparedStatement.executeUpdate();
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
+            try (Connection connection = hikari.getConnection();
+                 PreparedStatement update = connection.prepareStatement("UPDATE players SET total_fails = total_fails + 1 , passed = false WHERE uuid = ?;")) {
+                update.setString(1, player.getUniqueId().toString());
+                update.execute();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -121,18 +136,11 @@ public class StatusRecord {
 
     public void updateSolvedTime(Player player, long SolvedTime) {
         if (isUseSQL) {
-            try {
-                openConnection();
-                UUID uuid = player.getUniqueId();
-
-                String sql = "UPDATE players SET last_pass = ? , passed = true WHERE uuid = ?;";
-                PreparedStatement preparedStatement = connection.prepareStatement(sql);
-                preparedStatement.setLong(1, SolvedTime);
-                preparedStatement.setString(2, uuid.toString());
-
-                preparedStatement.executeUpdate();
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
+            try (Connection connection = hikari.getConnection();
+                 PreparedStatement update = connection.prepareStatement("UPDATE players SET last_pass = ? , passed = true WHERE uuid = ?;")){
+                update.setLong(1, SolvedTime);
+                update.setString(2, player.getUniqueId().toString());
+                update.execute();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -140,20 +148,13 @@ public class StatusRecord {
     }
 
     public boolean getPassed(Player player) {
-        try {
-            openConnection();
-            UUID uuid = player.getUniqueId();
-            String sql = "SELECT passed FROM players WHERE uuid = ?;";
-            PreparedStatement preparedStatement = connection.prepareStatement(sql);
-            preparedStatement.setString(1, uuid.toString());
-
-            ResultSet resultSet = preparedStatement.executeQuery();
-
-            if (resultSet.next()) {
-                return resultSet.getBoolean("passed");
-            }
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+        try (Connection connection = hikari.getConnection();
+             PreparedStatement select = connection.prepareStatement("SELECT passed FROM players WHERE uuid = ?;")) {
+            select.setString(1, player.getUniqueId().toString());
+            ResultSet result = select.executeQuery();
+            if (result.next())
+                return result.getBoolean("passed");
+            result.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -161,43 +162,26 @@ public class StatusRecord {
     }
 
     public long getLastPass(Player player) {
-        try {
-            openConnection();
-            UUID uuid = player.getUniqueId();
-            String sql = "SELECT last_pass FROM players WHERE uuid = ?;";
-            PreparedStatement preparedStatement = connection.prepareStatement(sql);
-            preparedStatement.setString(1, uuid.toString());
-
-            ResultSet resultSet = preparedStatement.executeQuery();
-
-            if (resultSet.next()) {
-                return resultSet.getLong("last_pass");
-            }
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+        try (Connection connection = hikari.getConnection();
+             PreparedStatement select = connection.prepareStatement("SELECT last_pass FROM players WHERE uuid = ?;")) {
+            select.setString(1, player.getUniqueId().toString());
+            ResultSet result = select.executeQuery();
+            if (result.next())
+                return result.getLong("last_pass");
+            result.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return 0;
     }
 
-
-    private void openConnection() throws SQLException, ClassNotFoundException {
-        if (connection != null && !connection.isClosed()) {
-            return;
-        }
-
-        synchronized (this) {
-            if (connection != null && !connection.isClosed()) {
-                return;
-            }
-            Class.forName("com.mysql.jdbc.Driver");
-            connection = DriverManager.getConnection("jdbc:mysql://" + this.host + ":" + this.port + "/" + this.database, this.username, this.password);
-        }
-    }
-
     public boolean getUseSQL() {
         return isUseSQL;
+    }
+
+    public void closeConnection() {
+        if (hikari != null)
+            hikari.close();
     }
 
 }

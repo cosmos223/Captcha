@@ -6,20 +6,14 @@ import me.kyllian.captcha.spigot.listeners.*;
 import me.kyllian.captcha.spigot.listeners.login.LoginListener;
 import me.kyllian.captcha.spigot.listeners.login.PlayerJoinListener;
 import me.kyllian.captcha.spigot.map.MapHandlerFactory;
-import me.kyllian.captcha.spigot.player.PlayerData;
 import me.kyllian.captcha.spigot.sql.StatusRecord;
 import me.kyllian.captcha.spigot.utilities.SafeArea;
-import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.plugin.messaging.PluginMessageListener;
 
-import java.io.ByteArrayInputStream;
-import java.io.ObjectInputStream;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 public class CaptchaPlugin extends JavaPlugin {
 
@@ -38,7 +32,7 @@ public class CaptchaPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         super.onEnable();
-        Metrics metrics = new Metrics(this, 692);
+//        Metrics metrics = new Metrics(this, 692);
 
         getServer().getMessenger().registerOutgoingPluginChannel(this, "kyllian:captcha");
 
@@ -74,6 +68,7 @@ public class CaptchaPlugin extends JavaPlugin {
         this.getServer().getMessenger().unregisterOutgoingPluginChannel(this);
         this.getServer().getMessenger().unregisterIncomingPluginChannel(this);
         captchaHandler.removeAllCaptchas();
+        statusRecord.closeConnection();
     }
 
     public void loadListeners() {
