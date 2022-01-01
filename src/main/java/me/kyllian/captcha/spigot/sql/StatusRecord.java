@@ -103,6 +103,13 @@ public class StatusRecord {
             hikari.setJdbcUrl("jdbc:mysql://" + this.host + ":" + this.port + "/" + this.database);
             hikari.addDataSourceProperty("user", username);
             hikari.addDataSourceProperty("password", password);
+
+            //接続を確認
+            try (Connection connection = hikari.getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT 1;")){
+                statement.execute();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
     }
 
