@@ -31,10 +31,10 @@ public class CaptchaHandler {
     }
 
     public void login(Player player) {
-        if (player.hasPermission("captcha.update")) plugin.getUpdateHandler().handleUpdateMessage(player);
         PlayerData playerData = plugin.getPlayerDataHandler().getPlayerDataFromPlayer(player);
         Mode mode = Mode.valueOf(plugin.getConfig().getString("captcha-settings.mode"));
-        if (mode == Mode.NONE) return;
+        // mode が NONE かつ オンラインプレイヤーが指定された人数よりも小さい または 以前参加したことがあり、認証をパスしている 場合
+        if (mode == Mode.NONE && (!(plugin.getServer().getOnlinePlayers().size() >= plugin.getMaxPlayerWithoutCaptcha()) || (player.hasPlayedBefore() && playerData.hasPassed()))) return;
         if (mode == Mode.FIRSTJOIN && (player.hasPlayedBefore() && playerData.hasPassed())) return;
         if (mode == Mode.RESTART && bootTime < playerData.getLastPass()) return;
         if (mode == Mode.AFTER && System.currentTimeMillis() - playerData.getLastPass() < plugin.getConfig().getInt("captcha-settings.after"))
@@ -90,7 +90,9 @@ public class CaptchaHandler {
         playerData.removeAssignedCaptcha();
         playerData.cancel();
         playerData.handleSolveState(solveState);
-        notifyBungee(player, false);
+        if (plugin.isEnabled()) {
+            notifyBungee(player, false);
+        }
         if (solveState == SolveState.LEAVE) return;
         player.sendMessage(plugin.getMessageHandler().getMessage(solveState == SolveState.OK ? "success" : "fail", player.getLocale()));
         if (solveState == SolveState.FAIL) {
@@ -101,10 +103,6 @@ public class CaptchaHandler {
             }
             this.assignCaptcha(player);
             return;
-        } else if (solveState == SolveState.OK) {
-            for (Player onlinePlayer : plugin.getServer().getOnlinePlayers()) {
-                onlinePlayer.sendMessage(plugin.playerJoinMessages.get(player));
-            }
         }
         if (playerData.getExecuteAfterFinish() != null) player.performCommand(playerData.getExecuteAfterFinish());
         playerData.setExecuteAfterFinish(null);

@@ -34,8 +34,11 @@ public class StatusRecord {
         file = new File(
                 plugin.getDataFolder(), "config_db.yml");
 
+//        String version = Bukkit.getMinecraftVersion();
+//        if ((Integer.parseInt(version.split("\\.")[1]) >= 16 && Integer.parseInt(version.split("\\.")[0]) == 1) || Integer.parseInt(version.split("\\.")[0]) >= 2) hikariDataSourceClassName = "com.mysql.cj.jdbc.Driver";
+//        else hikariDataSourceClassName = "com.mysql.jdbc.Driver";
         String version = Bukkit.getVersion();
-        if (version.contains("1.17") || version.contains("1.16")) hikariDataSourceClassName = "com.mysql.cj.jdbc.Driver";
+        if (version.contains("1.18") || version.contains("1.17") || version.contains("1.16")) hikariDataSourceClassName = "com.mysql.cj.jdbc.Driver";
         else hikariDataSourceClassName = "com.mysql.jdbc.Driver";
 
         try {
