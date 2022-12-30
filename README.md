@@ -1,4 +1,4 @@
-The English explanation is below.
+The English explanation is [below](#this-project-is-fork).
 
 # このプロジェクトはフォークです
 
